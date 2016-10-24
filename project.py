@@ -19,10 +19,10 @@ def printImages(img1,img2=None,img3=None,img4=None):
 	n = numImages(images)
 	for i in range(0,n):
 		if n<3:
-			plot.subplot(1,n,i+1),plot.imshow(images[i])
+			plot.subplot(1,n,i+1),plot.imshow(images[i],cmap='Greys_r')
 			plot.title(str(i)), plot.xticks([]), plot.yticks([])
 		else:
-			plot.subplot(2,2,i+1),plot.imshow(images[i])
+			plot.subplot(2,2,i+1),plot.imshow(images[i],cmap='Greys_r')
 			plot.title(str(i)), plot.xticks([]), plot.yticks([])
 	plot.show()
 
@@ -58,16 +58,40 @@ b = np.dstack([zeros,zeros,img[:,:,2]])
 
 
 image = swapRB(img)
-gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
-# First threshold still allows to see a difference between a black car and an empty space
+# Gaussian filter     cv2.GaussianBlur(image,(kernel_size_x,kernel_size_y),x_std_dev,y_std_dev) if 0 both std dev are obtained by kernel size
+blur = cv2.GaussianBlur(image,(3,3),0)
+
+gray = cv2.cvtColor(blur,cv2.COLOR_BGR2GRAY)
+gray2 = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+
+# WITH BLURRING (gaussian smoothing)
+# Normal threshold still allows to see a difference between a black car and an empty space
 ret,mask = cv2.threshold(gray,70,255,cv2.THRESH_BINARY)
 
-# Second threshold avoid painting white bright floor parts
-ret2,mask2 = cv2.threshold(gray,70,255,cv2.THRESH_BINARY)
+# Otsu threshold
+ret2,mask2 = cv2.threshold(gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU) # Black/red cars desapeared. Good for Segmentation of background
 
-print(img[244,43,:],gray[244,43])
-printImages2(mask2)
+# Adaptatives threasholds
+# Mean threshold
+thr1 = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,23,2) # Menos ruido, no reconoce algunos carros
+thr2 = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,23,2) # Mas ruido, peor reconoce mas
+
+# WITHOUT BLURRING
+# Normal threshold still allows to see a difference between a black car and an empty space
+ret3,mask3 = cv2.threshold(gray2,70,255,cv2.THRESH_BINARY)
+
+# Otsu threshold
+ret4,mask4 = cv2.threshold(gray2,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU) # Black/red cars desapeared. Good for Segmentation of background
+
+# Adaptatives threasholds
+# Mean threshold
+
+thr3 = cv2.adaptiveThreshold(gray2,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,23,2) # Menos ruido, no reconoce algunos carros
+thr4 = cv2.adaptiveThreshold(gray2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,23,2) # Mas ruido, peor reconoce mas
+
+printImages(thr1,thr3)
 
 
 
